@@ -262,13 +262,14 @@ fn compose_grid(paths: &[PathBuf], tile_size: u32, fit: &str, background: &str, 
         image::Rgba([r,g,b,255])
     } else { image::Rgba([0,0,0,255]) };
     let mut canvas = RgbaImage::from_pixel(w, h, bg);
-    for i in 0..9usize {
-        if i >= paths.len() { continue; }
+    for i in 0..total {
         let p = &paths[i];
         let img = image::open(p).with_context(|| format!("Failed to open image {:?}", p))?;
         let tile = fit_image(img, tile_size, fit, bg);
-        let col = (i % 3) as i64; let row = (i / 3) as i64;
-        let x = col * (tile_size as i64); let y = row * (tile_size as i64);
+        let col = (i as u32 % cols) as i64;
+        let row = (i as u32 / cols) as i64;
+        let x = col * (tile_size as i64);
+        let y = row * (tile_size as i64);
         image::imageops::overlay(&mut canvas, &tile, x, y);
     }
     canvas.save(output)?;

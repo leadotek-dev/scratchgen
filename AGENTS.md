@@ -1,0 +1,3 @@
+- Never compile to the target folder.
+- Always compile to the agent_target folder.
+- After any and all changes, commit all files with a fitting message.

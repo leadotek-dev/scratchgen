@@ -1,5 +1,6 @@
 {
   "pool": ["images/*/*"],
+  "grid_size": 4,
   "min_count": {
     "rose.jpg": 3
   },
