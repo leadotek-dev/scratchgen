@@ -15,14 +15,13 @@ CLI options (flags)
 - `--config <FILE>`: path to JSON or YAML config (JSON is accepted; YAML supported).
 - `--pool <PATTERN>...`: override config `pool` (one or more glob patterns).
 - `--mode <MODE>`: `constrained` (default), `independent`, or `without_replacement`.
-- `--tile-size <N>`: pixel size of each tile (default `256`). Final image is `tile_size * 3` square.
- - `--tile-size <N>`: pixel size of each tile (default `256`). Final image size is `tile_size * grid_size` square.
- - `--grid-size <N>`: dimension `N` for an N x N grid (minimum `2`, default `3`).
+- `--tile-size <N>`: pixel size of each tile (default `256`). Final image size is `tile_size * grid_size` square.
+- `--grid-size <N>`: dimension `N` for an N x N grid (minimum `2`, default `3`).
 - `--fit <FIT>`: `cover` (default), `contain`, or `stretch` (how to resize input images).
 - `--seed <N>`: deterministic RNG seed (0 = random/entropy).
 - `--output <FILE>`: required output path (PNG/JPEG inferred by extension).
 - `--background <COLOR>`: hex `#rrggbb` background (default `#000000`).
-- `--allow-repeat-when-pool-small`: when sampling without replacement, allow repeats after exhausting pool.
+- `--allow-repeat-when-pool-small`: when sampling without replacement, allow repeats after exhausting pool (useful when requested tiles > pool size).
 - `--generate-examples`: create sample images under `images/flowers` and `images/animals` and exit.
 
 Config file fields (JSON/YAML)
@@ -33,15 +32,16 @@ Config file fields (JSON/YAML)
 - `mode` (optional): one of `constrained`, `independent`, `without_replacement` (overridden by CLI `--mode`).
 - `tile_size` (optional): tile pixel size (overridden by CLI `--tile-size`).
 - `fit` (optional): `cover`, `contain`, `stretch`.
-- `seed` (optional): integer seed for deterministic output.
-- `output` (optional): output path (overridden by CLI `--output`).
-- `background` (optional): `#rrggbb` color.
-- `allow_repeat_when_pool_small` (optional): boolean allowing repeats when pool smaller than 9 in without-replacement mode.
+-- `seed` (optional): integer seed for deterministic output.
+-- `output` (optional): output path (overridden by CLI `--output`).
+-- `background` (optional): `#rrggbb` color.
+-- `grid_size` (optional): integer N to create an N x N grid (minimum 2, default 3). When set, allocation and sampling use `N*N` tiles.
+-- `allow_repeat_when_pool_small` (optional): boolean allowing repeats when pool smaller than the required `N*N` tiles in without-replacement mode.
 
 Selection modes explained
-- `constrained`: compute expected counts per image = `weight / total_weight * 9`, take `floor(expected)` as base and distribute remaining slots by largest remainders; enforce `min_count`/`max_count` by clamping and redistributing. Guarantees counts sum to 9 and respect min/max. Final multiset is shuffled deterministically by `seed`.
-- `independent`: sample each of the 9 tiles independently with replacement using weights. No per-image guarantees (only statistical expectation).
-- `without_replacement`: weighted sampling without replacement. If `pool < 9` and `--allow-repeat-when-pool-small` is false the CLI returns an error; if true, after exhausting the pool sampling restarts.
+ - `constrained`: compute expected counts per image = `weight / total_weight * (N*N)`, take `floor(expected)` as base and distribute remaining slots by largest remainders; enforce `min_count`/`max_count` by clamping and redistributing. Guarantees counts sum to `N*N` and respect min/max. Final multiset is shuffled deterministically by `seed`.
+ - `independent`: sample each of the `N*N` tiles independently with replacement using weights. No per-image guarantees (only statistical expectation).
+ - `without_replacement`: weighted sampling without replacement. If `pool` size < `N*N` and `--allow-repeat-when-pool-small` is false the CLI returns an error; if true, after exhausting the pool sampling may restart.
 
 Image sizing / fit
 - `cover`: center-crop to preserve aspect ratio and fill the tile (recommended).
