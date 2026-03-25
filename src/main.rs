@@ -24,6 +24,8 @@ struct Cli {
     tile_size: u32,
     #[arg(long, default_value_t = String::from("cover"))]
     fit: String,
+    #[arg(long, default_value_t = 3)]
+    grid_size: usize,
     #[arg(long, default_value_t = 0)]
     seed: u64,
     #[arg(long)]
@@ -49,6 +51,7 @@ struct Config {
     seed: Option<u64>,
     output: Option<String>,
     background: Option<String>,
+    grid_size: Option<usize>,
     allow_repeat_when_pool_small: Option<bool>,
 }
 
@@ -247,7 +250,10 @@ fn fit_image(img: DynamicImage, tile_size: u32, fit: &str, bg: image::Rgba<u8>) 
 }
 
 fn compose_grid(paths: &[PathBuf], tile_size: u32, fit: &str, background: &str, output: &Path) -> Result<()> {
-    let cols = 3; let rows = 3; let w = tile_size * cols; let h = tile_size * rows;
+    // determine grid size from number of paths (assume square)
+    let total = paths.len();
+    let grid_n = (f64::from(total as u32).sqrt().round()) as u32;
+    let cols = grid_n; let rows = grid_n; let w = tile_size * cols; let h = tile_size * rows;
     // parse background as hex #rrggbb
     let bg = if background.starts_with('#') && background.len()>=7 {
         let r = u8::from_str_radix(&background[1..3], 16).unwrap_or(0);
@@ -308,7 +314,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
     // load config
-    let mut config = Config{ pool: None, weights: None, min_count: None, max_count: None, mode: None, tile_size: None, fit: None, seed: None, output: None, background: None, allow_repeat_when_pool_small: None };
+    let mut config = Config{ pool: None, weights: None, min_count: None, max_count: None, mode: None, tile_size: None, fit: None, seed: None, output: None, background: None, grid_size: None, allow_repeat_when_pool_small: None };
     if let Some(cfg) = cli.config {
         let text = fs::read_to_string(&cfg)?;
         if cfg.extension().and_then(|s| s.to_str()).map(|s| s.eq_ignore_ascii_case("json")).unwrap_or(false) {
@@ -329,16 +335,20 @@ fn main() -> Result<()> {
 
     let images = build_images(&config, &pool_patterns)?;
     let mut rng = if seed==0 { ChaCha8Rng::from_entropy() } else { ChaCha8Rng::seed_from_u64(seed) };
+    let grid_n = config.grid_size.unwrap_or(cli.grid_size);
+    let grid_n = if grid_n < 2 { 2usize } else { grid_n };
+    let tiles_count = grid_n * grid_n;
+
     let selected: Vec<PathBuf> = match mode.as_str() {
-        "independent" => sample_independent(&images, 9, &mut rng),
-        "without_replacement" => sample_without_replacement(&images, 9, &mut rng, allow_repeat),
-        _ => allocate_constrained(&images, 9, &mut rng),
+        "independent" => sample_independent(&images, tiles_count, &mut rng),
+        "without_replacement" => sample_without_replacement(&images, tiles_count, &mut rng, allow_repeat),
+        _ => allocate_constrained(&images, tiles_count, &mut rng),
     };
 
     if let Some(parent) = output.parent() { fs::create_dir_all(parent)?; }
     compose_grid(&selected, tile_size, &fit, &background, &output)?;
     // print metadata
-    let meta = serde_json::json!({"seed": seed, "mode": mode, "tiles": selected.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>(), "output": output.to_string_lossy()});
+    let meta = serde_json::json!({"seed": seed, "mode": mode, "grid_size": grid_n, "tiles": selected.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>(), "output": output.to_string_lossy()});
     println!("{}", serde_json::to_string_pretty(&meta)?);
     Ok(())
 }

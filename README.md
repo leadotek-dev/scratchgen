@@ -16,6 +16,8 @@ CLI options (flags)
 - `--pool <PATTERN>...`: override config `pool` (one or more glob patterns).
 - `--mode <MODE>`: `constrained` (default), `independent`, or `without_replacement`.
 - `--tile-size <N>`: pixel size of each tile (default `256`). Final image is `tile_size * 3` square.
+ - `--tile-size <N>`: pixel size of each tile (default `256`). Final image size is `tile_size * grid_size` square.
+ - `--grid-size <N>`: dimension `N` for an N x N grid (minimum `2`, default `3`).
 - `--fit <FIT>`: `cover` (default), `contain`, or `stretch` (how to resize input images).
 - `--seed <N>`: deterministic RNG seed (0 = random/entropy).
 - `--output <FILE>`: required output path (PNG/JPEG inferred by extension).
