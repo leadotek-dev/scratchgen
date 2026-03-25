@@ -12,5 +12,12 @@ globwalk = "0.8"
 rand = "0.8"
 rand_chacha = "0.3"
 anyhow = "1.0"
-image = { version = "0.24", features = ["png", "jpeg", "webp", "ico", "tiff"] }
+# Keep only the pure-Rust codecs to improve chance of a musl static build
+image = { version = "0.24", features = ["png", "jpeg"] }
 rayon = "1.7"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
