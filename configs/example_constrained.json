@@ -1,0 +1,12 @@
+{
+  "pool": ["images/*/*"],
+  "min_count": {
+    "rose.jpg": 3
+  },
+  "mode": "constrained",
+  "tile_size": 500,
+  "fit": "cover",
+  "output": "out/grid_constrained.png",
+  "background": "#222222",
+  "allow_repeat_when_pool_small": true
+}

@@ -1,0 +1,9 @@
+{
+  "pool": ["images/*"],
+  "mode": "independent",
+  "tile_size": 256,
+  "fit": "contain",
+  "seed": 123,
+  "output": "out/grid_independent.png",
+  "background": "#ffffff"
+}

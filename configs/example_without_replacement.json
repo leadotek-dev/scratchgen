@@ -1,0 +1,10 @@
+{
+  "pool": ["images/*"],
+  "mode": "without_replacement",
+  "tile_size": 200,
+  "fit": "cover",
+  "seed": 7,
+  "output": "out/grid_no_replace.png",
+  "background": "#000000",
+  "allow_repeat_when_pool_small": false
+}
