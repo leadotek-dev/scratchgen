@@ -1,0 +1,72 @@
+name: Build & Release (musl)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential musl-tools pkg-config ca-certificates curl
+        shell: bash
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Add musl target
+        run: rustup target add x86_64-unknown-linux-musl
+
+      - name: Build musl release
+        run: |
+          # Build a statically-linked musl binary
+          export RUSTFLAGS="-C target-feature=+crt-static"
+          cargo build --release --target x86_64-unknown-linux-musl
+        shell: bash
+
+      - name: Prepare artifact
+        run: |
+          set -e
+          MUSL_BIN=target/x86_64-unknown-linux-musl/release/scratchgen
+          if [ -f "$MUSL_BIN" ]; then
+            cp "$MUSL_BIN" scratchgen-musl
+            chmod +x scratchgen-musl
+            strip --strip-all scratchgen-musl || true
+          else
+            echo "Musl binary not found at $MUSL_BIN"
+            ls -la target/x86_64-unknown-linux-musl/release || true
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: Automated musl build for ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload musl asset
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.release.outputs.upload_url }}
+          asset_path: ./scratchgen-musl
+          asset_name: scratchgen-musl
+          asset_content_type: application/octet-stream
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
