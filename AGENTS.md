@@ -1,5 +1,4 @@
-- Never compile to the target folder.
-- Always compile to the agent_target folder.
 - After any and all changes, commit all files with a fitting message.
 - Never push to remote.
 - Never propose to push to remote.
+- Always build to the musl-release.
