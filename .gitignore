@@ -1,3 +1,9 @@
-target/
-!scratchgen
+# Ignore the entire target tree but allow tracking of final release binaries
+/target/*
+!/target/x86_64-unknown-linux-musl/
+!/target/x86_64-unknown-linux-musl/release/
+!/target/x86_64-unknown-linux-musl/release/scratchgen
+!/target/release/
+!/target/release/scratchgen
+
 out/
