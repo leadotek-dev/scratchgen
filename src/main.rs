@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use globwalk::GlobWalkerBuilder;
-use image::{imageops::FilterType, DynamicImage, GenericImageView, RgbaImage};
+use image::{imageops::FilterType, DynamicImage, RgbaImage};
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use serde::Deserialize;
@@ -34,6 +34,9 @@ struct Cli {
     /// Optional background image path (overrides solid background color)
     #[arg(long)]
     background_image: Option<PathBuf>,
+    /// Overwrite output file if it already exists
+    #[arg(long, default_value_t = false)]
+    overwrite: bool,
     #[arg(long, default_value_t = false)]
     allow_repeat_when_pool_small: bool,
     /// Generate example images into images/flowers and images/animals and exit
@@ -54,6 +57,7 @@ struct Config {
     output: Option<String>,
     background: Option<String>,
     background_image: Option<String>,
+    overwrite: Option<bool>,
     grid_size: Option<usize>,
     allow_repeat_when_pool_small: Option<bool>,
 }
@@ -445,6 +449,7 @@ fn main() -> Result<()> {
         output: None,
         background: None,
         background_image: None,
+        overwrite: None,
         grid_size: None,
         allow_repeat_when_pool_small: None,
     };
@@ -499,6 +504,11 @@ fn main() -> Result<()> {
     } else {
         config.background.clone().unwrap_or(cli.background.clone())
     };
+    let overwrite = if cli.overwrite {
+        true
+    } else {
+        config.overwrite.unwrap_or(false)
+    };
     let allow_repeat = if cli.allow_repeat_when_pool_small {
         cli.allow_repeat_when_pool_small
     } else {
@@ -525,6 +535,12 @@ fn main() -> Result<()> {
 
     if let Some(parent) = output.parent() {
         fs::create_dir_all(parent)?;
+    }
+    if output.exists() && !overwrite {
+        anyhow::bail!(
+            "Refusing to overwrite existing file {:?}; pass --overwrite to force",
+            output
+        );
     }
     // determine background image from CLI/config
     let bg_image_path: Option<PathBuf> = if let Some(bi) = cli.background_image.clone() {
