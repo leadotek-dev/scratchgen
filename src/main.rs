@@ -4,7 +4,6 @@ use globwalk::GlobWalkerBuilder;
 use image::{imageops::FilterType, DynamicImage, GenericImageView, RgbaImage};
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
-use rayon::prelude::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs;
@@ -201,7 +200,7 @@ fn allocate_constrained(
         remainders[i] = expected - (base as f64);
     }
     let sum_base: i32 = alloc.iter().sum();
-    let mut remaining = (total_tiles as i32) - sum_base;
+    let remaining = (total_tiles as i32) - sum_base;
     let mut order: Vec<usize> = (0..n).collect();
     order.sort_by(|&a, &b| remainders[b].partial_cmp(&remainders[a]).unwrap());
     for i in 0..remaining as usize {
@@ -356,11 +355,17 @@ fn compose_grid(
     let w = tile_size * cols;
     let h = tile_size * rows;
     // parse background color as hex #rrggbb (always parse so `bg` is available for tile fitting)
-    let bg = if background.starts_with('#') && background.len() >= 7 {
+    // parse background color as hex #rrggbb or #rrggbbaa (alpha optional)
+    let bg = if background.starts_with('#') && (background.len() == 7 || background.len() == 9) {
         let r = u8::from_str_radix(&background[1..3], 16).unwrap_or(0);
         let g = u8::from_str_radix(&background[3..5], 16).unwrap_or(0);
         let b = u8::from_str_radix(&background[5..7], 16).unwrap_or(0);
-        image::Rgba([r, g, b, 255])
+        let a = if background.len() == 9 {
+            u8::from_str_radix(&background[7..9], 16).unwrap_or(255)
+        } else {
+            255
+        };
+        image::Rgba([r, g, b, a])
     } else {
         image::Rgba([0, 0, 0, 255])
     };
@@ -408,12 +413,12 @@ fn generate_example_images() -> Result<()> {
         ("wolf.png", [112, 128, 144, 255]),
     ];
     for (name, col) in flowers {
-        let mut img = RgbaImage::from_pixel(400, 400, image::Rgba(col));
+        let img = RgbaImage::from_pixel(400, 400, image::Rgba(col));
         let path = flower_dir.join(name);
         img.save(&path)?;
     }
     for (name, col) in animals {
-        let mut img = RgbaImage::from_pixel(400, 400, image::Rgba(col));
+        let img = RgbaImage::from_pixel(400, 400, image::Rgba(col));
         let path = animal_dir.join(name);
         img.save(&path)?;
     }
